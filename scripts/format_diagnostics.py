@@ -37,13 +37,23 @@ gc_counts = []
 cg_counts = []
 
 for j in range(1, len(d)):
+    if any([d[j][HEADER_TO_COL_IDX[x]]=='' for x in ['motif_positions', 'motif_names', 'motif_orientations']]):
+        if not all([d[j][HEADER_TO_COL_IDX[x]]=='' for x in ['motif_positions', 'motif_names', 'motif_orientations']]):
+            print(j, d[j])
+            print("If either of positions/names/orientations is empty, all must be empty, i.e. no motif introduced")
+            exit(1)
+        else:
+            # can skip these lines, presumably background
+            continue
+
     num_pos = len(d[j][HEADER_TO_COL_IDX["motif_positions"]].split(';'))
     num_names = len(d[j][HEADER_TO_COL_IDX["motif_names"]].split(';'))
     num_or = len(d[j][HEADER_TO_COL_IDX["motif_orientations"]].split(';'))
-  
+
     if not all([pos_regex.match(x) for x in d[j][HEADER_TO_COL_IDX["motif_positions"]].split(';')]):
         print(j, d[j])
         print("Positions incorrectly formatted, should be start1-end1;start2-end2...if multiple else start-end")
+        exit(1)
 
     if not (num_pos == num_names == num_or):
         print(j, d[j])
@@ -55,7 +65,7 @@ for j in range(1, len(d)):
         print("Coord misspecified. Should be of form chr:start-end")
         exit(1)
 
-    # check if there's a GC close enough to motif
+    # check if there's a GC close enough to motif (if there is at least one motif)
     pos = [[int(z) for z in y.split("-")] for y in d[j][HEADER_TO_COL_IDX["motif_positions"]].split(";")]
     ors = d[j][HEADER_TO_COL_IDX["motif_orientations"]].split(";")
 
