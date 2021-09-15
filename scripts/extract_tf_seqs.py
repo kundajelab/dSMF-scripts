@@ -27,7 +27,7 @@ for h in REQD_HEADERS:
     HEADER_TO_COL_IDX[h] = d[0].index(h)
 
 for x in d[1:]:
-    pos = [[int(z) for z in y.split("-")] for y in x[HEADER_TO_COL_IDX["motif_positions"]].split(";")]
+    pos = [[int(z) for z in y.split("-")] for y in x[HEADER_TO_COL_IDX["motif_positions"]].split(";") if y!='']
     ors = x[HEADER_TO_COL_IDX["motif_orientations"]].split(";")
 
     for i, y in enumerate(pos):
