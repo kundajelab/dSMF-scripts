@@ -4,7 +4,10 @@ import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--input-file", required=True, type=str, help="Input file")
+parser.add_argument("-x", "--blacklist", required=False, type=str, nargs="+", help="Any short sequences that must be missing")
 args = parser.parse_args()
+
+args.blacklist = [x.upper() for x in args.blacklist]
 
 REQD_HEADERS = ["sequence", "motif_positions", "motif_names", "motif_orientations", "coord"]
 
@@ -37,6 +40,21 @@ gc_counts = []
 cg_counts = []
 
 for j in range(1, len(d)):
+    if args.blacklist:
+        if any([y in d[j][HEADER_TO_COL_IDX["sequence"]].upper() for y in args.blacklist]):
+            blacklist_seq_present = [y in d[j][HEADER_TO_COL_IDX["sequence"]].upper() for y in args.blacklist]
+            print(j, d[j])
+            print("Sequence contains the blacklisted short sequence " + args.blacklist[blacklist_seq_present.index(True)])
+            exit(1)
+
+    if not coord_regex.match(d[j][HEADER_TO_COL_IDX["coord"]]):
+        print(j, d[j])
+        print("Coord misspecified. Should be of form chr:start-end")
+        exit(1)
+
+    gc_counts.append(d[j][HEADER_TO_COL_IDX["sequence"]].upper().count("GC"))
+    cg_counts.append(d[j][HEADER_TO_COL_IDX["sequence"]].upper().count("CG"))
+
     if any([d[j][HEADER_TO_COL_IDX[x]]=='' for x in ['motif_positions', 'motif_names', 'motif_orientations']]):
         if not all([d[j][HEADER_TO_COL_IDX[x]]=='' for x in ['motif_positions', 'motif_names', 'motif_orientations']]):
             print(j, d[j])
@@ -45,6 +63,7 @@ for j in range(1, len(d)):
         else:
             # can skip these lines, presumably background
             continue
+
 
     num_pos = len(d[j][HEADER_TO_COL_IDX["motif_positions"]].split(';'))
     num_names = len(d[j][HEADER_TO_COL_IDX["motif_names"]].split(';'))
@@ -60,11 +79,6 @@ for j in range(1, len(d)):
         print("Number of positions, number of names and number of orientations not matching!")
         exit(1)
 
-    if not coord_regex.match(d[j][HEADER_TO_COL_IDX["coord"]]):
-        print(j, d[j])
-        print("Coord misspecified. Should be of form chr:start-end")
-        exit(1)
-
     # check if there's a GC close enough to motif (if there is at least one motif)
     pos = [[int(z) for z in y.split("-")] for y in d[j][HEADER_TO_COL_IDX["motif_positions"]].split(";")]
     ors = d[j][HEADER_TO_COL_IDX["motif_orientations"]].split(";")
@@ -76,9 +90,6 @@ for j in range(1, len(d)):
             print("GC missing near motif instance")
             exit(1)
         
-
-    gc_counts.append(d[j][HEADER_TO_COL_IDX["sequence"]].upper().count("GC"))
-    cg_counts.append(d[j][HEADER_TO_COL_IDX["sequence"]].upper().count("CG"))
 
 gc_counts = np.array(gc_counts)
 cg_counts = np.array(cg_counts)
